@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VOXEL — общайся свободно</title>
+    
+    <!-- Подключаем Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
+    
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+    <!-- ============ ЭКРАН ВХОДА ============ -->
+    <div id="auth-screen">
+        <div class="auth-container">
+            <div class="auth-box">
+                <h1 class="logo">◈ VOXEL</h1>
+                <p class="subtitle">Собери своё общение</p>
+                
+                <div class="auth-tabs">
+                    <button class="tab active" data-tab="login">Вход</button>
+                    <button class="tab" data-tab="register">Регистрация</button>
+                </div>
+                
+                <!-- Форма входа -->
+                <form id="login-form" class="auth-form active">
+                    <input type="email" id="login-email" placeholder="Email" required />
+                    <input type="password" id="login-password" placeholder="Пароль" required />
+                    <button type="submit" class="auth-btn">Войти</button>
+                </form>
+                
+                <!-- Форма регистрации -->
+                <form id="register-form" class="auth-form">
+                    <input type="text" id="reg-username" placeholder="Имя пользователя" required />
+                    <input type="email" id="reg-email" placeholder="Email" required />
+                    <input type="password" id="reg-password" placeholder="Пароль (мин. 6 символов)" required />
+                    <button type="submit" class="auth-btn">Создать аккаунт</button>
+                </form>
+                
+                <div class="auth-divider">или</div>
+                
+                <button id="google-btn" class="google-btn">
+                    🅶 Войти через Google
+                </button>
+                
+                <p id="auth-error" class="error-message"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ ГЛАВНЫЙ ЭКРАН ============ -->
+    <div id="main-screen" style="display: none;">
+        <!-- Левая панель (список чатов) -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>◈ VOXEL</h2>
+                <button id="settings-btn" class="icon-btn">⚙️</button>
+            </div>
+            
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Поиск или ID #" />
+            </div>
+            
+            <div class="chats-list" id="chats-list">
+                <!-- Список чатов будет генерироваться -->
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-card" id="user-card">
+                    <img id="current-avatar" src="" alt="avatar" />
+                    <div>
+                        <span id="current-username">Загрузка...</span>
+                        <span class="status-dot online" id="current-status-dot"></span>
+                    </div>
+                    <button id="logout-btn" class="icon-btn">🚪</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Центральная панель (чат) -->
+        <div class="chat-panel" id="chat-panel">
+            <div class="chat-header" id="chat-header">
+                <div class="chat-user-info">
+                    <img id="chat-avatar" src="" alt="avatar" class="sticky-avatar" />
+                    <div>
+                        <span id="chat-username">Выберите чат</span>
+                        <span class="status-text" id="chat-status">Онлайн</span>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <button id="call-btn" class="icon-btn">📞</button>
+                    <button id="video-call-btn" class="icon-btn">📹</button>
+                </div>
+            </div>
+            
+            <div class="messages-container" id="messages-container">
+                <!-- Сообщения будут генерироваться -->
+            </div>
+            
+            <div class="message-input-area">
+                <button id="emoji-btn" class="icon-btn">😊</button>
+                <input type="text" id="message-input" placeholder="Сообщение..." />
+                <button id="send-btn" class="send-btn">➤</button>
+            </div>
+        </div>
+
+        <!-- Правая панель (профиль/инфо) -->
+        <div class="profile-panel" id="profile-panel">
+            <div class="profile-content" id="profile-content">
+                <!-- Будет заполняться -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ МОДАЛЬНЫЕ ОКНА ============ -->
+    
+    <!-- Модалка настроек -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-settings">&times;</span>
+            <h2>Настройки</h2>
+            
+            <div class="settings-section">
+                <h3>Профиль</h3>
+                <label>Аватар</label>
+                <input type="file" id="avatar-upload" accept="image/*" />
+                <label>Имя</label>
+                <input type="text" id="settings-username" />
+                <label>О себе</label>
+                <textarea id="settings-bio" rows="3"></textarea>
+                <label>Пол</label>
+                <select id="settings-gender">
+                    <option value="male">Мужчина</option>
+                    <option value="female">Женщина</option>
+                    <option value="unspecified">Не указано</option>
+                </select>
+            </div>
+            
+            <div class="settings-section">
+                <h3>Статус</h3>
+                <select id="settings-status">
+                    <option value="online">🟢 Онлайн</option>
+                    <option value="idle">🌙 Отошёл</option>
+                    <option value="dnd">🔴 Не беспокоить</option>
+                    <option value="offline">⚫ Невидимка</option>
+                </select>
+            </div>
+            
+            <div class="settings-section">
+                <h3>Тема</h3>
+                <button class="theme-btn" data-theme="dark">🌙 Тёмная</button>
+                <button class="theme-btn" data-theme="light">☀️ Светлая</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка поиска друзей -->
+    <div id="friend-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-friend-modal">&times;</span>
+            <h2>Добавить друга</h2>
+            <input type="text" id="friend-id-input" placeholder="Введите ID # (например, 4281)" />
+            <button id="search-friend-btn" class="auth-btn">Найти</button>
+            <div id="friend-search-result"></div>
+        </div>
+    </div>
+
+    <!-- Модалка звонка -->
+    <div id="call-modal" class="modal">
+        <div class="modal-content call-content">
+            <span class="close-btn" id="close-call">&times;</span>
+            <div id="call-status">🔄 Соединение...</div>
+            <video id="local-video" autoplay muted></video>
+            <video id="remote-video" autoplay></video>
+            <button id="end-call-btn" class="auth-btn" style="background:red;">Завершить звонок</button>
+        </div>
+    </div>
+
+    <!-- ============ ПОДКЛЮЧАЕМ СКРИПТЫ ============ -->
+    <script src="js/firebase-init.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/users.js"></script>
+    <script src="js/friends.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/calls.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
